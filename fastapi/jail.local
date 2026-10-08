@@ -1,0 +1,38 @@
+[DEFAULT]
+banaction = iptables-allports
+ignoreip  = 127.0.0.1/8
+usedns    = no
+backend   = polling
+
+# Escalate repeated bans for repeat offenders
+bantime = 10m
+bantime.increment = true
+bantime.factor = 2
+bantime.maxtime = 1d
+bantime.rndtime = 30s
+
+[sshd]
+enabled = false
+
+[sshd-ddos]
+enabled = false
+
+# HTTP Flood protection for JWT Login endpoint
+[http-flood]
+enabled  = true
+port     = 8000,http,https
+filter   = http-flood
+logpath  = /var/log/ldap-auth/access.log
+# Ban after 60 matching requests within any 10-second window
+maxretry = 60
+findtime = 10s
+
+# Extra port-level protection for LDAP service using TLS (Port 636 / LDAPS and 389)
+[ldap-tls]
+enabled  = true
+port     = 636,389,ldaps,ldap
+filter   = http-flood
+logpath  = /var/log/ldap-auth/access.log
+maxretry = 40
+findtime = 10s
+bantime  = 30m

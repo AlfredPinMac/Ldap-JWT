@@ -14,7 +14,7 @@ services:
       - ldap_data:/var/lib/ldap
       - ldap_config:/etc/ldap/slapd.d
     networks:
-      - ldap-network
+      - lab-network
 
   phpldapadmin:
     image: osixia/phpldapadmin:latest
@@ -22,34 +22,74 @@ services:
     hostname: phpldapadmin
     environment:
       PHPLDAPADMIN_LDAP_HOSTS: "openldap"
-      # The image enables HTTPS by default. For this lab we intentionally
-      # disable it so Apache serves phpLDAPadmin correctly on port 80.
       PHPLDAPADMIN_HTTPS: "false"
     ports:
       - "8080:80"
     depends_on:
       - openldap
     networks:
-      - ldap-network
+      - lab-network
 
-  api:
+  # 1. LDAP Auth Service (JWT API + TLS Protection) - Protected with Fail2Ban
+  ldap-api:
     build: ./fastapi
-    container_name: ldap-api
+    container_name: ldap-api-protected
+    hostname: ldap-api
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     ports:
       - "8000:8000"
     environment:
       LDAP_HOST: openldap
       LDAP_PORT: "389"
       LDAP_BASE_DN: "dc=example,dc=com"
+      LDAP_USE_TLS: "false"
       JWT_SECRET: "super-secret-jwt-key-for-ldap-cybersecurity-lab-2026"
     depends_on:
       - openldap
     networks:
-      - ldap-network
+      - lab-network
+
+  # 2. Pokémon Backend API - Protected with Fail2Ban
+  pokemon-backend:
+    build: ./pokemon-backend
+    container_name: pokemon-backend-protected
+    hostname: pokemon-backend
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    ports:
+      - "5000:5000"
+    environment:
+      JWT_SECRET: "super-secret-jwt-key-for-ldap-cybersecurity-lab-2026"
+      JWT_ALGORITHM: "HS256"
+    depends_on:
+      - ldap-api
+    networks:
+      - lab-network
+
+  # 3. Pokémon Frontend Dashboard (Vue 3 + Nginx) - Protected with Fail2Ban
+  pokemon-frontend:
+    build: ./pokemon-frontend
+    container_name: pokemon-frontend-protected
+    hostname: pokemon-frontend
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      - pokemon-backend
+      - ldap-api
+    networks:
+      - lab-network
 
 volumes:
   ldap_data:
   ldap_config:
 
 networks:
-  ldap-network:
+  lab-network:
+    driver: bridge
