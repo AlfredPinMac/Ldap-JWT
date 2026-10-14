@@ -146,7 +146,7 @@ def login(request: LoginRequest):
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales LDAP inválidas. Verifique usuario o contraseña.",
+            detail="Invalid LDAP credentials. Please check your username or password.",
         )
 
     except HTTPException:
@@ -154,7 +154,7 @@ def login(request: LoginRequest):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error conectando al servidor LDAP: {str(e)}",
+            detail=f"Error connecting to LDAP server: {str(e)}",
         )
     finally:
         try:
@@ -168,7 +168,7 @@ def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(s
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No se proporcionó Bearer token en el encabezado Authorization",
+            detail="Bearer token not provided in Authorization header",
         )
     token = credentials.credentials
     try:
@@ -177,10 +177,10 @@ def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(s
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="El token JWT ha expirado",
+            detail="JWT token has expired",
         )
     except jwt.InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token JWT inválido: {str(e)}",
+            detail=f"Invalid JWT token: {str(e)}",
         )
